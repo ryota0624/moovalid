@@ -28,7 +28,7 @@ pub impl[T : Show] Show for Nel[T] with output(self, logger) {
   logger.write_string(", tail: [")
   let mut first = true
   for x in self.tail {
-    if not(first) {
+    if !first {
       logger.write_string(", ")
     }
     first = false
