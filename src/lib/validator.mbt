@@ -114,3 +114,53 @@ pub fn in_range(lo : Int, hi : Int) -> Validator[Int, Nel[String], Int] {
     }
   })
 }
+
+// ─── FieldError ───────────────────────────────────────────────────────────────
+
+/// An error paired with a path describing which field it came from.
+pub struct FieldError {
+  path : Array[String]
+  message : String
+} derive(Eq, Debug)
+
+/// Create a `FieldError` with the given path and message.
+pub fn FieldError::new(path : Array[String], message : String) -> FieldError {
+  { path, message }
+}
+
+/// Display a `FieldError` as `"<path>: <message>"`.
+pub impl Show for FieldError with output(self, logger) {
+  let joined = self.path.join(".")
+  if joined.length() > 0 {
+    logger.write_string(joined)
+    logger.write_string(": ")
+  }
+  logger.write_string(self.message)
+}
+
+/// Prefix all `FieldError` paths in a `Nel[FieldError]` with `name`.
+pub fn[I, A] Validator::at_field(
+  self : Validator[I, Nel[FieldError], A],
+  name : String
+) -> Validator[I, Nel[FieldError], A] {
+  Validator::new(fn(i) {
+    match (self.validate)(i) {
+      Valid(a) => Valid(a)
+      Invalid(errs) => {
+        fn prefix(fe : FieldError) -> FieldError {
+          let new_path : Array[String] = [name]
+          for p in fe.path {
+            new_path.push(p)
+          }
+          { path: new_path, message: fe.message }
+        }
+        Invalid(
+          {
+            head: prefix(errs.head),
+            tail: errs.tail.map(prefix),
+          },
+        )
+      }
+    }
+  })
+}

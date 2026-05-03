@@ -87,3 +87,49 @@ test "in_range fails above" {
 test "in_range fails below" {
   assert_eq(in_range(1, 10).run(0), Invalid(Nel::new("must be in range [1, 10]")))
 }
+
+// ─── Stage 7: FieldError and at_field ────────────────────────────────────────
+
+fn field_validator(inner : Validator[String, Nel[String], String]) -> Validator[String, Nel[FieldError], String] {
+  Validator::new(fn(i) {
+    map_error(inner.run(i), fn(nel) {
+      Nel::of(
+        FieldError::new([], nel.head),
+        nel.tail.map(fn(s) { FieldError::new([], s) }),
+      )
+    })
+  })
+}
+
+test "FieldError Show with path" {
+  let fe = FieldError::new(["user", "name"], "must be non-empty")
+  assert_eq(fe.to_string(), "user.name: must be non-empty")
+}
+
+test "FieldError Show without path" {
+  let fe = FieldError::new([], "required")
+  assert_eq(fe.to_string(), "required")
+}
+
+test "at_field prefixes error path on failure" {
+  let v = field_validator(non_empty()).at_field("username")
+  let result = v.run("")
+  match result {
+    Invalid(nel) => assert_eq(nel.head.path, ["username"])
+    Valid(_) => panic()
+  }
+}
+
+test "at_field preserves Valid" {
+  let v = field_validator(non_empty()).at_field("username")
+  assert_eq(v.run("alice"), Valid("alice"))
+}
+
+test "at_field nests paths" {
+  let v = field_validator(non_empty()).at_field("name").at_field("user")
+  let result = v.run("")
+  match result {
+    Invalid(nel) => assert_eq(nel.head.path, ["user", "name"])
+    Valid(_) => panic()
+  }
+}
