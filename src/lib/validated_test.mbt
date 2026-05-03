@@ -223,3 +223,50 @@ test "or_else chains two Invalids" {
   let v : Validated[String, Int] = Invalid("first")
   assert_eq(or_else(v, Invalid("second")), Invalid("second"))
 }
+
+// ─── Stage 5: to_option, from_option, attempt_into ───────────────────────────
+
+test "to_option Valid returns Some" {
+  let v : Validated[String, Int] = Valid(5)
+  let opt = to_option(v)
+  assert_eq(opt is Some(_), true)
+}
+
+test "to_option Invalid returns None" {
+  let v : Validated[String, Int] = Invalid("err")
+  let opt = to_option(v)
+  assert_eq(opt is None, true)
+}
+
+test "from_option Some returns Valid" {
+  assert_eq(from_option(Some(1), "missing"), Valid(1))
+}
+
+test "from_option None returns Invalid" {
+  let result : Validated[String, Int] = from_option(None, "missing")
+  assert_eq(result, Invalid("missing"))
+}
+
+test "attempt_into wraps success in Valid" {
+  let result : Validated[String, Int] = attempt_into(
+    () => 42,
+    fn(e : Error) { e.to_string() },
+  )
+  assert_eq(result, Valid(42))
+}
+
+test "attempt_into captures error via wrap" {
+  fn failing() -> Int raise AttemptError {
+    raise AttemptError("oops")
+  }
+  let result : Validated[String, Int] = attempt_into(
+    failing,
+    fn(e : AttemptError) { e.to_string() },
+  )
+  assert_eq(is_invalid(result), true)
+}
+
+test "attempt is consistent with attempt_into" {
+  let v1 : Validated[Nel[AttemptError], Int] = attempt(() => 10)
+  assert_eq(v1, Valid(10))
+}
