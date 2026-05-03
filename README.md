@@ -86,7 +86,7 @@ let username_validator =
 | `Validated[E, A]` | `Valid(A)` or `Invalid(E)` — like `Result` but accumulates errors |
 | `Nel[T]` | Non-empty list; canonical error accumulator |
 | `Validator[I, E, A]` | Reusable `(I) -> Validated[E, A]` with combinators |
-| `FieldError` | Error with a `path : Array[String]` and `message : String` |
+| `FieldError[M]` | Error with a `path : Array[String]` and `message : M` |
 
 ### Combinators
 

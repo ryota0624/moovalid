@@ -136,39 +136,42 @@ pub fn in_range(lo : Int, hi : Int) -> Validator[Int, Nel[String], Int] {
 
 ///|
 /// An error paired with a path describing which field it came from.
-pub struct FieldError {
+pub struct FieldError[M] {
   path : Array[String]
-  message : String
+  message : M
 } derive(Eq, Debug)
 
 ///|
 /// Create a `FieldError` with the given path and message.
-pub fn FieldError::new(path : Array[String], message : String) -> FieldError {
+pub fn[M] FieldError::new(
+  path : Array[String],
+  message : M,
+) -> FieldError[M] {
   { path, message }
 }
 
 ///|
 /// Display a `FieldError` as `"<path>: <message>"`.
-pub impl Show for FieldError with output(self, logger) {
+pub impl[M : Show] Show for FieldError[M] with output(self, logger) {
   let joined = self.path.join(".")
   if joined.length() > 0 {
     logger.write_string(joined)
     logger.write_string(": ")
   }
-  logger.write_string(self.message)
+  logger.write_string(self.message.to_string())
 }
 
 ///|
-/// Prefix all `FieldError` paths in a `Nel[FieldError]` with `name`.
-pub fn[I, A] Validator::at_field(
-  self : Validator[I, Nel[FieldError], A],
+/// Prefix all `FieldError` paths in a `Nel[FieldError[M]]` with `name`.
+pub fn[I, M, A] Validator::at_field(
+  self : Validator[I, Nel[FieldError[M]], A],
   name : String,
-) -> Validator[I, Nel[FieldError], A] {
+) -> Validator[I, Nel[FieldError[M]], A] {
   Validator::new(fn(i) {
     match (self.validate)(i) {
       Valid(a) => Valid(a)
       Invalid(errs) => {
-        fn prefix(fe : FieldError) -> FieldError {
+        fn prefix(fe : FieldError[M]) -> FieldError[M] {
           let new_path : Array[String] = [name]
           for p in fe.path {
             new_path.push(p)

@@ -137,7 +137,7 @@ test "in_range fails below" {
 ///|
 fn field_validator(
   inner : Validator[String, Nel[String], String],
-) -> Validator[String, Nel[FieldError], String] {
+) -> Validator[String, Nel[FieldError[String]], String] {
   Validator::new(fn(i) {
     map_error(inner.run(i), fn(nel) {
       Nel::of(
