@@ -146,3 +146,80 @@ test "to_result from attempt Invalid returns Err" {
   )
   assert_eq(to_result(v), Err(Nel::new(AttemptError("oops"))))
 }
+
+// ─── Stage 2: map, map_error, fold, predicates, get_or_else, or_else ─────────
+
+test "map transforms Valid value" {
+  let v : Validated[String, Int] = Valid(3)
+  assert_eq(map(v, fn(x) { x * 2 }), Valid(6))
+}
+
+test "map preserves Invalid" {
+  let v : Validated[String, Int] = Invalid("err")
+  assert_eq(map(v, fn(x) { x * 2 }), Invalid("err"))
+}
+
+test "map_error transforms Invalid value" {
+  let v : Validated[String, Int] = Invalid("oops")
+  assert_eq(map_error(v, fn(e) { e + "!" }), Invalid("oops!"))
+}
+
+test "map_error preserves Valid" {
+  let v : Validated[String, Int] = Valid(5)
+  assert_eq(map_error(v, fn(e) { e + "!" }), Valid(5))
+}
+
+test "fold on Valid calls on_valid" {
+  let v : Validated[String, Int] = Valid(42)
+  assert_eq(fold(v, fn(_) { 0 }, fn(x) { x }), 42)
+}
+
+test "fold on Invalid calls on_invalid" {
+  let v : Validated[String, Int] = Invalid("bad")
+  assert_eq(fold(v, fn(_) { -1 }, fn(x) { x }), -1)
+}
+
+test "is_valid returns true for Valid" {
+  let v : Validated[String, Int] = Valid(1)
+  assert_eq(is_valid(v), true)
+}
+
+test "is_valid returns false for Invalid" {
+  let v : Validated[String, Int] = Invalid("e")
+  assert_eq(is_valid(v), false)
+}
+
+test "is_invalid returns true for Invalid" {
+  let v : Validated[String, Int] = Invalid("e")
+  assert_eq(is_invalid(v), true)
+}
+
+test "is_invalid returns false for Valid" {
+  let v : Validated[String, Int] = Valid(1)
+  assert_eq(is_invalid(v), false)
+}
+
+test "get_or_else returns value for Valid" {
+  let v : Validated[String, Int] = Valid(7)
+  assert_eq(get_or_else(v, 0), 7)
+}
+
+test "get_or_else returns default for Invalid" {
+  let v : Validated[String, Int] = Invalid("e")
+  assert_eq(get_or_else(v, 0), 0)
+}
+
+test "or_else returns self when Valid" {
+  let v : Validated[String, Int] = Valid(1)
+  assert_eq(or_else(v, Valid(99)), Valid(1))
+}
+
+test "or_else returns alternative when Invalid" {
+  let v : Validated[String, Int] = Invalid("e")
+  assert_eq(or_else(v, Valid(99)), Valid(99))
+}
+
+test "or_else chains two Invalids" {
+  let v : Validated[String, Int] = Invalid("first")
+  assert_eq(or_else(v, Invalid("second")), Invalid("second"))
+}
