@@ -1,0 +1,25 @@
+name: "Copilot Setup Steps"
+
+# Allow manual runs from the Actions tab for validation.
+on:
+  workflow_dispatch:
+
+jobs:
+  # MUST be named `copilot-setup-steps` for Copilot to pick it up.
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install MoonBit CLI
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Verify MoonBit installation
+        run: moon version
