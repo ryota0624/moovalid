@@ -1,3 +1,4 @@
 # MoonBit build artifacts
 target/
 .moon/
+_build/
