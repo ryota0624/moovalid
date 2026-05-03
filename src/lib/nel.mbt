@@ -34,12 +34,32 @@ pub impl[T : Show] Show for Nel[T] with output(self, logger) {
 /// Combine two `Nel` values by appending the second after the first.
 pub impl[T] Semigroup for Nel[T] with combine(self, other) {
   let tail : Array[T] = []
-  for x in self.tail {
-    tail.push(x)
-  }
+  tail.push_iter(self.tail.iter())
   tail.push(other.head)
-  for x in other.tail {
-    tail.push(x)
-  }
+  tail.push_iter(other.tail.iter())
   { head: self.head, tail }
+}
+
+/// Convert a `Nel` to a plain `Array`.
+///
+/// ```
+/// let nel = Nel::of(1, [2, 3])
+/// assert_eq(nel.to_array(), [1, 2, 3])
+/// ```
+pub fn[T] Nel::to_array(self : Nel[T]) -> Array[T] {
+  let arr : Array[T] = [self.head]
+  for x in self.tail {
+    arr.push(x)
+  }
+  arr
+}
+
+/// Return the number of elements in a `Nel`.
+///
+/// ```
+/// assert_eq(Nel::new(1).length(), 1)
+/// assert_eq(Nel::of(1, [2, 3]).length(), 3)
+/// ```
+pub fn[T] Nel::length(self : Nel[T]) -> Int {
+  1 + self.tail.length()
 }
