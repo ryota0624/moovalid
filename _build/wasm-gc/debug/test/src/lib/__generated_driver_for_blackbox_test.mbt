@@ -410,6 +410,11 @@ let moonbit_test_driver_internal_no_args_tests : MoonBitTestDriverInternalTestMa
     11: (__test_76616c6964617465645f746573742e6d6274_11, ["round-trip Err through Validated"]),
     12: (__test_76616c6964617465645f746573742e6d6274_12, ["ap applies Valid function to Valid value"]),
     13: (__test_76616c6964617465645f746573742e6d6274_13, ["ap accumulates errors when both are Invalid"]),
+    14: (__test_76616c6964617465645f746573742e6d6274_14, ["attempt wraps success in Valid"]),
+    15: (__test_76616c6964617465645f746573742e6d6274_15, ["attempt captures raised error as Invalid"]),
+    16: (__test_76616c6964617465645f746573742e6d6274_16, ["attempt errors accumulate with map2"]),
+    17: (__test_76616c6964617465645f746573742e6d6274_17, ["to_result from attempt Valid returns Ok"]),
+    18: (__test_76616c6964617465645f746573742e6d6274_18, ["to_result from attempt Invalid returns Err"]),
   },
   "validated.mbt": {
   },
