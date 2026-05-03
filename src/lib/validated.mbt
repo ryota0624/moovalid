@@ -9,7 +9,7 @@ pub trait Semigroup {
 pub struct Nel[T] {
   head : T
   tail : Array[T]
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 /// Create a `Nel` with a single element.
 pub fn[T] Nel::new(head : T) -> Nel[T] {
@@ -22,7 +22,7 @@ pub fn[T] Nel::of(head : T, tail : Array[T]) -> Nel[T] {
 }
 
 /// Combine two `Nel` values by appending the second after the first.
-impl[T] Semigroup for Nel[T] with combine(self, other) {
+pub impl[T] Semigroup for Nel[T] with combine(self, other) {
   let tail : Array[T] = []
   for x in self.tail {
     tail.push(x)
@@ -40,7 +40,7 @@ impl[T] Semigroup for Nel[T] with combine(self, other) {
 pub(all) enum Validated[E, A] {
   Valid(A)
   Invalid(E)
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 /// Combine two `Validated` values using an applicative-style binary function.
 /// - Both `Valid` → apply `f` to the two inner values.
