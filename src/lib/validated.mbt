@@ -1,55 +1,4 @@
-/// A `Semigroup` can combine two values of the same type into one.
-/// Used to accumulate errors across multiple `Invalid` branches.
-pub trait Semigroup {
-  combine(Self, Self) -> Self
-}
-
-/// `Nel[T]` – a non-empty list that holds at least one value.
-/// Used as the canonical error accumulator together with `Semigroup`.
-pub struct Nel[T] {
-  head : T
-  tail : Array[T]
-} derive(Eq, Debug)
-
-/// Create a `Nel` with a single element.
-pub fn[T] Nel::new(head : T) -> Nel[T] {
-  { head, tail: [] }
-}
-
-/// Create a `Nel` from a head element and an existing tail array.
-pub fn[T] Nel::of(head : T, tail : Array[T]) -> Nel[T] {
-  { head, tail }
-}
-
-/// Display a `Nel` value.  Used by `assert_eq` in tests.
-pub impl[T : Show] Show for Nel[T] with output(self, logger) {
-  logger.write_string("{ head: ")
-  self.head.output(logger)
-  logger.write_string(", tail: [")
-  let mut first = true
-  for x in self.tail {
-    if !first {
-      logger.write_string(", ")
-    }
-    first = false
-    x.output(logger)
-  }
-  logger.write_string("] }")
-}
-
-/// Combine two `Nel` values by appending the second after the first.
-pub impl[T] Semigroup for Nel[T] with combine(self, other) {
-  let tail : Array[T] = []
-  for x in self.tail {
-    tail.push(x)
-  }
-  tail.push(other.head)
-  for x in other.tail {
-    tail.push(x)
-  }
-  { head: self.head, tail }
-}
-
+///|
 /// `Validated[E, A]` is either a `Valid` success value or an `Invalid` error.
 /// Unlike `Result`, combining two `Invalid` values accumulates both errors
 /// (when `E` implements `Semigroup`) instead of short-circuiting.
@@ -58,6 +7,7 @@ pub(all) enum Validated[E, A] {
   Invalid(E)
 } derive(Eq, Debug)
 
+///|
 /// Display a `Validated` value.  Used by `assert_eq` in tests.
 pub impl[E : Show, A : Show] Show for Validated[E, A] with output(self, logger) {
   match self {
@@ -74,71 +24,104 @@ pub impl[E : Show, A : Show] Show for Validated[E, A] with output(self, logger) 
   }
 }
 
-/// Combine two `Validated` values using an applicative-style binary function.
-/// - Both `Valid` → apply `f` to the two inner values.
-/// - One `Invalid` → propagate that error.
-/// - Both `Invalid` → combine the two errors with `Semigroup::combine`.
-pub fn[E : Semigroup, A, B, C] map2(
-  va : Validated[E, A],
-  vb : Validated[E, B],
-  f : (A, B) -> C
-) -> Validated[E, C] {
-  match (va, vb) {
-    (Valid(a), Valid(b)) => Valid(f(a, b))
-    (Invalid(e), Valid(_)) => Invalid(e)
-    (Valid(_), Invalid(e)) => Invalid(e)
-    (Invalid(e1), Invalid(e2)) => Invalid(e1.combine(e2))
-  }
-}
-
-/// Combine three `Validated` values with a ternary function.
-/// All errors from `Invalid` branches are accumulated.
-pub fn[E : Semigroup, A, B, C, D] map3(
-  va : Validated[E, A],
-  vb : Validated[E, B],
-  vc : Validated[E, C],
-  f : (A, B, C) -> D
-) -> Validated[E, D] {
-  map2(map2(va, vb, fn(a, b) { (a, b) }), vc, fn(ab, c) {
-    f(ab.0, ab.1, c)
-  })
-}
-
-/// Applicative `ap`: apply a validated function to a validated argument.
-pub fn[E : Semigroup, A, B] ap(
-  vf : Validated[E, (A) -> B],
-  va : Validated[E, A]
-) -> Validated[E, B] {
-  map2(vf, va, fn(f, a) { f(a) })
-}
-
-/// Convert a `Validated` into a standard `Result`.
-/// `Valid(a)` becomes `Ok(a)`, `Invalid(e)` becomes `Err(e)`.
-pub fn[E, A] to_result(v : Validated[E, A]) -> Result[A, E] {
+///|
+/// Apply a function to the success value, leaving errors unchanged.
+///
+/// ```
+/// let v : Validated[String, Int] = Valid(3)
+/// assert_eq(map(v, fn(x) { x * 2 }), Valid(6))
+/// ```
+pub fn[E, A, B] map(v : Validated[E, A], f : (A) -> B) -> Validated[E, B] {
   match v {
-    Valid(a) => Ok(a)
-    Invalid(e) => Err(e)
+    Valid(a) => Valid(f(a))
+    Invalid(e) => Invalid(e)
   }
 }
 
-/// Convert a standard `Result` into a `Validated`.
-/// `Ok(a)` becomes `Valid(a)`, `Err(e)` becomes `Invalid(e)`.
-pub fn[E, A] from_result(r : Result[A, E]) -> Validated[E, A] {
-  match r {
-    Ok(a) => Valid(a)
-    Err(e) => Invalid(e)
+///|
+/// Apply a function to the error value, leaving success unchanged.
+///
+/// ```
+/// let v : Validated[String, Int] = Invalid("oops")
+/// assert_eq(map_error(v, fn(e) { e + "!" }), Invalid("oops!"))
+/// ```
+pub fn[E, F, A] map_error(v : Validated[E, A], f : (E) -> F) -> Validated[F, A] {
+  match v {
+    Valid(a) => Valid(a)
+    Invalid(e) => Invalid(f(e))
   }
 }
 
-/// Attempt execution and capture raises into Validated.
-/// Runs `f` and wraps a successful result in `Valid(a)`.
-/// If `f` raises an error `e`, captures it as `Invalid(Nel::new(e))`.
-/// The resulting `Validated[Nel[E], A]` can be composed with `map2`/`map3`
-/// to accumulate errors across multiple `attempt` calls.
-pub fn[E : Error, A] attempt(f : () -> A raise E) -> Validated[Nel[E], A] {
-  try {
-    Valid(f())
-  } catch {
-    e => Invalid(Nel::new(e))
+///|
+/// Fold a `Validated` into a single value by providing handlers for each case.
+///
+/// ```
+/// let v : Validated[String, Int] = Valid(42)
+/// assert_eq(fold(v, fn(_) { 0 }, fn(x) { x }), 42)
+/// ```
+pub fn[E, A, B] fold(
+  v : Validated[E, A],
+  on_invalid : (E) -> B,
+  on_valid : (A) -> B,
+) -> B {
+  match v {
+    Valid(a) => on_valid(a)
+    Invalid(e) => on_invalid(e)
+  }
+}
+
+///|
+/// Returns `true` if the value is `Valid`.
+///
+/// ```
+/// assert_eq(is_valid(Valid(1)), true)
+/// assert_eq(is_valid(Invalid("e")), false)
+/// ```
+pub fn[E, A] is_valid(v : Validated[E, A]) -> Bool {
+  match v {
+    Valid(_) => true
+    Invalid(_) => false
+  }
+}
+
+///|
+/// Returns `true` if the value is `Invalid`.
+///
+/// ```
+/// assert_eq(is_invalid(Invalid("e")), true)
+/// assert_eq(is_invalid(Valid(1)), false)
+/// ```
+pub fn[E, A] is_invalid(v : Validated[E, A]) -> Bool {
+  !is_valid(v)
+}
+
+///|
+/// Return the success value, or a default if `Invalid`.
+///
+/// ```
+/// let v : Validated[String, Int] = Invalid("e")
+/// assert_eq(get_or_else(v, 0), 0)
+/// ```
+pub fn[E, A] get_or_else(v : Validated[E, A], default : A) -> A {
+  match v {
+    Valid(a) => a
+    Invalid(_) => default
+  }
+}
+
+///|
+/// Return `self` if `Valid`, otherwise return `alternative`.
+///
+/// ```
+/// let v : Validated[String, Int] = Invalid("e")
+/// assert_eq(or_else(v, Valid(99)), Valid(99))
+/// ```
+pub fn[E, A] or_else(
+  v : Validated[E, A],
+  alternative : Validated[E, A],
+) -> Validated[E, A] {
+  match v {
+    Valid(_) => v
+    Invalid(_) => alternative
   }
 }

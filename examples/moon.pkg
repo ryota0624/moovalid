@@ -1,0 +1,7 @@
+import {
+  "ryota0624/moovalid/src/lib",
+}
+
+options(
+  "is-main": true,
+)
