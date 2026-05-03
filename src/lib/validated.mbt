@@ -12,12 +12,12 @@ pub struct Nel[T] {
 } derive(Eq, Show)
 
 /// Create a `Nel` with a single element.
-pub fn Nel::new[T](head : T) -> Nel[T] {
+pub fn[T] Nel::new(head : T) -> Nel[T] {
   { head, tail: [] }
 }
 
 /// Create a `Nel` from a head element and an existing tail array.
-pub fn Nel::of[T](head : T, tail : Array[T]) -> Nel[T] {
+pub fn[T] Nel::of(head : T, tail : Array[T]) -> Nel[T] {
   { head, tail }
 }
 
@@ -37,7 +37,7 @@ impl[T] Semigroup for Nel[T] with combine(self, other) {
 /// `Validated[E, A]` is either a `Valid` success value or an `Invalid` error.
 /// Unlike `Result`, combining two `Invalid` values accumulates both errors
 /// (when `E` implements `Semigroup`) instead of short-circuiting.
-pub enum Validated[E, A] {
+pub(all) enum Validated[E, A] {
   Valid(A)
   Invalid(E)
 } derive(Eq, Show)
@@ -46,7 +46,7 @@ pub enum Validated[E, A] {
 /// - Both `Valid` → apply `f` to the two inner values.
 /// - One `Invalid` → propagate that error.
 /// - Both `Invalid` → combine the two errors with `Semigroup::combine`.
-pub fn map2[E : Semigroup, A, B, C](
+pub fn[E : Semigroup, A, B, C] map2(
   va : Validated[E, A],
   vb : Validated[E, B],
   f : (A, B) -> C
@@ -61,7 +61,7 @@ pub fn map2[E : Semigroup, A, B, C](
 
 /// Combine three `Validated` values with a ternary function.
 /// All errors from `Invalid` branches are accumulated.
-pub fn map3[E : Semigroup, A, B, C, D](
+pub fn[E : Semigroup, A, B, C, D] map3(
   va : Validated[E, A],
   vb : Validated[E, B],
   vc : Validated[E, C],
@@ -73,7 +73,7 @@ pub fn map3[E : Semigroup, A, B, C, D](
 }
 
 /// Applicative `ap`: apply a validated function to a validated argument.
-pub fn ap[E : Semigroup, A, B](
+pub fn[E : Semigroup, A, B] ap(
   vf : Validated[E, (A) -> B],
   va : Validated[E, A]
 ) -> Validated[E, B] {
@@ -82,7 +82,7 @@ pub fn ap[E : Semigroup, A, B](
 
 /// Convert a `Validated` into a standard `Result`.
 /// `Valid(a)` becomes `Ok(a)`, `Invalid(e)` becomes `Err(e)`.
-pub fn to_result[E, A](v : Validated[E, A]) -> Result[A, E] {
+pub fn[E, A] to_result(v : Validated[E, A]) -> Result[A, E] {
   match v {
     Valid(a) => Ok(a)
     Invalid(e) => Err(e)
@@ -91,7 +91,7 @@ pub fn to_result[E, A](v : Validated[E, A]) -> Result[A, E] {
 
 /// Convert a standard `Result` into a `Validated`.
 /// `Ok(a)` becomes `Valid(a)`, `Err(e)` becomes `Invalid(e)`.
-pub fn from_result[E, A](r : Result[A, E]) -> Validated[E, A] {
+pub fn[E, A] from_result(r : Result[A, E]) -> Validated[E, A] {
   match r {
     Ok(a) => Valid(a)
     Err(e) => Invalid(e)
