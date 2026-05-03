@@ -26,8 +26,11 @@ jobs:
       - name: Show MoonBit version
         run: moon version
 
+      - name: Check formatting
+        run: moon fmt --check
+
       - name: Check types
         run: moon check
 
-      - name: Run tests
+      - name: Run tests (includes doc-tests)
         run: moon test

@@ -1,3 +1,4 @@
+///|
 /// Convert a `Validated` into a standard `Result`.
 /// `Valid(a)` becomes `Ok(a)`, `Invalid(e)` becomes `Err(e)`.
 pub fn[E, A] to_result(v : Validated[E, A]) -> Result[A, E] {
@@ -7,6 +8,7 @@ pub fn[E, A] to_result(v : Validated[E, A]) -> Result[A, E] {
   }
 }
 
+///|
 /// Convert a standard `Result` into a `Validated`.
 /// `Ok(a)` becomes `Valid(a)`, `Err(e)` becomes `Invalid(e)`.
 pub fn[E, A] from_result(r : Result[A, E]) -> Validated[E, A] {
@@ -16,6 +18,7 @@ pub fn[E, A] from_result(r : Result[A, E]) -> Validated[E, A] {
   }
 }
 
+///|
 /// Attempt execution and capture raises into Validated.
 /// Runs `f` and wraps a successful result in `Valid(a)`.
 /// If `f` raises an error `e`, captures it as `Invalid(Nel::new(e))`.
@@ -25,6 +28,7 @@ pub fn[E : Error, A] attempt(f : () -> A raise E) -> Validated[Nel[E], A] {
   attempt_into(f, fn(e) { Nel::new(e) })
 }
 
+///|
 /// Convert a `Validated` to an `Option`, discarding errors.
 /// `Valid(a)` becomes `Some(a)`, `Invalid(_)` becomes `None`.
 ///
@@ -39,6 +43,7 @@ pub fn[E, A] to_option(v : Validated[E, A]) -> A? {
   }
 }
 
+///|
 /// Lift an `Option` into `Validated`, using `on_none` as the error if `None`.
 ///
 /// ```
@@ -52,6 +57,7 @@ pub fn[E, A] from_option(opt : A?, on_none : E) -> Validated[E, A] {
   }
 }
 
+///|
 /// Like `attempt`, but wraps the error with `wrap` before storing in `Invalid`.
 /// Useful when mapping a specific error type into a custom accumulator type.
 ///
@@ -60,11 +66,9 @@ pub fn[E, A] from_option(opt : A?, on_none : E) -> Validated[E, A] {
 /// ```
 pub fn[E : Error, F, A] attempt_into(
   f : () -> A raise E,
-  wrap : (E) -> F
+  wrap : (E) -> F,
 ) -> Validated[F, A] {
-  try {
-    Valid(f())
-  } catch {
+  Valid(f()) catch {
     e => Invalid(wrap(e))
   }
 }

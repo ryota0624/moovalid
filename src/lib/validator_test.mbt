@@ -1,30 +1,55 @@
 // ─── Stage 6: Validator tests ─────────────────────────────────────────────────
 
+///|
 test "Validator::new and run success" {
   let v = Validator::new(fn(x : Int) {
-    if x > 0 { Valid(x) } else { Invalid("negative") }
+    if x > 0 {
+      Valid(x)
+    } else {
+      Invalid("negative")
+    }
   })
   assert_eq(v.run(1), Valid(1))
 }
 
+///|
 test "Validator::new and run failure" {
   let v = Validator::new(fn(x : Int) {
-    if x > 0 { Valid(x) } else { Invalid("negative") }
+    if x > 0 {
+      Valid(x)
+    } else {
+      Invalid("negative")
+    }
   })
   assert_eq(v.run(-1), Invalid("negative"))
 }
 
+///|
 test "Validator::map transforms success" {
-  let v : Validator[Int, String, Int] = Validator::new(fn(x : Int) { Valid(x) }).map(fn(x) { x * 2 })
+  let v : Validator[Int, String, Int] = Validator::new(fn(x : Int) { Valid(x) }).map(fn(
+      x,
+    ) {
+      x * 2
+    },
+  )
   assert_eq(v.run(3), Valid(6))
 }
 
+///|
 test "Validator::and_then chains validators" {
   let v = Validator::new(fn(x : Int) {
-    if x > 0 { Valid(x) } else { Invalid(Nel::new("not positive")) }
+    if x > 0 {
+      Valid(x)
+    } else {
+      Invalid(Nel::new("not positive"))
+    }
   }).and_then(fn(x) {
     Validator::new(fn(_i) {
-      if x < 100 { Valid(x) } else { Invalid(Nel::new("too large")) }
+      if x < 100 {
+        Valid(x)
+      } else {
+        Invalid(Nel::new("too large"))
+      }
     })
   })
   assert_eq(v.run(5), Valid(5))
@@ -32,6 +57,7 @@ test "Validator::and_then chains validators" {
   assert_eq(v.run(200), Invalid(Nel::new("too large")))
 }
 
+///|
 test "Validator::zip accumulates errors" {
   let v1 = Validator::new(fn(s : String) {
     if s.length() > 0 {
@@ -52,45 +78,66 @@ test "Validator::zip accumulates errors" {
   assert_eq(zipped.run(""), Invalid(Nel::new("empty")))
 }
 
+///|
 test "non_empty passes non-empty string" {
   assert_eq(non_empty().run("hi"), Valid("hi"))
 }
 
+///|
 test "non_empty fails empty string" {
   assert_eq(non_empty().run(""), Invalid(Nel::new("must be non-empty")))
 }
 
+///|
 test "min_length passes" {
   assert_eq(min_length(3).run("abc"), Valid("abc"))
 }
 
+///|
 test "min_length fails" {
   assert_eq(min_length(3).run("ab"), Invalid(Nel::new("must have length >= 3")))
 }
 
+///|
 test "max_length passes" {
   assert_eq(max_length(3).run("abc"), Valid("abc"))
 }
 
+///|
 test "max_length fails" {
-  assert_eq(max_length(3).run("abcd"), Invalid(Nel::new("must have length <= 3")))
+  assert_eq(
+    max_length(3).run("abcd"),
+    Invalid(Nel::new("must have length <= 3")),
+  )
 }
 
+///|
 test "in_range passes" {
   assert_eq(in_range(1, 10).run(5), Valid(5))
 }
 
+///|
 test "in_range fails above" {
-  assert_eq(in_range(1, 10).run(11), Invalid(Nel::new("must be in range [1, 10]")))
+  assert_eq(
+    in_range(1, 10).run(11),
+    Invalid(Nel::new("must be in range [1, 10]")),
+  )
 }
 
+///|
 test "in_range fails below" {
-  assert_eq(in_range(1, 10).run(0), Invalid(Nel::new("must be in range [1, 10]")))
+  assert_eq(
+    in_range(1, 10).run(0),
+    Invalid(Nel::new("must be in range [1, 10]")),
+  )
 }
 
 // ─── Stage 7: FieldError and at_field ────────────────────────────────────────
 
-fn field_validator(inner : Validator[String, Nel[String], String]) -> Validator[String, Nel[FieldError], String] {
+///|
+fn field_validator(
+  inner : Validator[String, Nel[String], String],
+) -> Validator[String, Nel[FieldError], String] {
   Validator::new(fn(i) {
     map_error(inner.run(i), fn(nel) {
       Nel::of(
@@ -101,16 +148,19 @@ fn field_validator(inner : Validator[String, Nel[String], String]) -> Validator[
   })
 }
 
+///|
 test "FieldError Show with path" {
   let fe = FieldError::new(["user", "name"], "must be non-empty")
   assert_eq(fe.to_string(), "user.name: must be non-empty")
 }
 
+///|
 test "FieldError Show without path" {
   let fe = FieldError::new([], "required")
   assert_eq(fe.to_string(), "required")
 }
 
+///|
 test "at_field prefixes error path on failure" {
   let v = field_validator(non_empty()).at_field("username")
   let result = v.run("")
@@ -120,11 +170,13 @@ test "at_field prefixes error path on failure" {
   }
 }
 
+///|
 test "at_field preserves Valid" {
   let v = field_validator(non_empty()).at_field("username")
   assert_eq(v.run("alice"), Valid("alice"))
 }
 
+///|
 test "at_field nests paths" {
   let v = field_validator(non_empty()).at_field("name").at_field("user")
   let result = v.run("")
