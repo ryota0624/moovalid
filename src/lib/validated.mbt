@@ -129,3 +129,16 @@ pub fn[E, A] from_result(r : Result[A, E]) -> Validated[E, A] {
     Err(e) => Invalid(e)
   }
 }
+
+/// Attempt execution and capture raises into Validated.
+/// Runs `f` and wraps a successful result in `Valid(a)`.
+/// If `f` raises an error `e`, captures it as `Invalid(Nel::new(e))`.
+/// The resulting `Validated[Nel[E], A]` can be composed with `map2`/`map3`
+/// to accumulate errors across multiple `attempt` calls.
+pub fn[E : Error, A] attempt(f : () -> A raise E) -> Validated[Nel[E], A] {
+  try {
+    Valid(f())
+  } catch {
+    e => Invalid(Nel::new(e))
+  }
+}

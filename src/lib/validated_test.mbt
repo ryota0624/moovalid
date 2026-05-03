@@ -93,3 +93,56 @@ test "ap accumulates errors when both are Invalid" {
   let va : Validated[Nel[String], Int] = Invalid(Nel::new("bad arg"))
   assert_eq(ap(vf, va), Invalid(Nel::of("bad fn", ["bad arg"])))
 }
+
+// ─── attempt tests ────────────────────────────────────────────────────────────
+
+suberror AttemptError { AttemptError(String) } derive(Eq, Debug)
+
+pub impl Show for AttemptError with output(self, logger) {
+  let AttemptError(s) = self
+  logger.write_string("AttemptError(")
+  s.output(logger)
+  logger.write_string(")")
+}
+
+// 1. attempt success: a non-raising closure is wrapped in Valid.
+test "attempt wraps success in Valid" {
+  let result : Validated[Nel[AttemptError], Int] = attempt(() => 42)
+  assert_eq(result, Valid(42))
+}
+
+// 2. attempt capture: a raised error is caught and stored in Invalid.
+test "attempt captures raised error as Invalid" {
+  let result : Validated[Nel[AttemptError], Int] = attempt(
+    () => raise AttemptError("failed"),
+  )
+  assert_eq(result, Invalid(Nel::new(AttemptError("failed"))))
+}
+
+// 3. error accumulation: two Invalid attempt results compose with map2.
+test "attempt errors accumulate with map2" {
+  let v1 : Validated[Nel[AttemptError], Int] = attempt(
+    () => raise AttemptError("err1"),
+  )
+  let v2 : Validated[Nel[AttemptError], Int] = attempt(
+    () => raise AttemptError("err2"),
+  )
+  let result = map2(v1, v2, fn(a, b) { a + b })
+  assert_eq(
+    result,
+    Invalid(Nel::of(AttemptError("err1"), [AttemptError("err2")])),
+  )
+}
+
+// 4. round-trip: convert an attempt result back to Result via to_result.
+test "to_result from attempt Valid returns Ok" {
+  let v : Validated[Nel[AttemptError], Int] = attempt(() => 99)
+  assert_eq(to_result(v), Ok(99))
+}
+
+test "to_result from attempt Invalid returns Err" {
+  let v : Validated[Nel[AttemptError], Int] = attempt(
+    () => raise AttemptError("oops"),
+  )
+  assert_eq(to_result(v), Err(Nel::new(AttemptError("oops"))))
+}
