@@ -1,14 +1,8 @@
 name: "Copilot Setup Steps"
 
-# Run automatically when this file changes, and allow manual runs from the Actions tab.
+# Allow manual runs from the Actions tab for validation.
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - .github/workflows/copilot-setup-steps.yml
-  pull_request:
-    paths:
-      - .github/workflows/copilot-setup-steps.yml
 
 jobs:
   # MUST be named `copilot-setup-steps` for Copilot to pick it up.

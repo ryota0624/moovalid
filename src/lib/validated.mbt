@@ -21,6 +21,22 @@ pub fn[T] Nel::of(head : T, tail : Array[T]) -> Nel[T] {
   { head, tail }
 }
 
+/// Display a `Nel` value.  Used by `assert_eq` in tests.
+pub impl[T : Show] Show for Nel[T] with output(self, logger) {
+  logger.write_string("{ head: ")
+  self.head.output(logger)
+  logger.write_string(", tail: [")
+  let mut first = true
+  for x in self.tail {
+    if not(first) {
+      logger.write_string(", ")
+    }
+    first = false
+    x.output(logger)
+  }
+  logger.write_string("] }")
+}
+
 /// Combine two `Nel` values by appending the second after the first.
 pub impl[T] Semigroup for Nel[T] with combine(self, other) {
   let tail : Array[T] = []
@@ -41,6 +57,22 @@ pub(all) enum Validated[E, A] {
   Valid(A)
   Invalid(E)
 } derive(Eq, Debug)
+
+/// Display a `Validated` value.  Used by `assert_eq` in tests.
+pub impl[E : Show, A : Show] Show for Validated[E, A] with output(self, logger) {
+  match self {
+    Valid(a) => {
+      logger.write_string("Valid(")
+      a.output(logger)
+      logger.write_string(")")
+    }
+    Invalid(e) => {
+      logger.write_string("Invalid(")
+      e.output(logger)
+      logger.write_string(")")
+    }
+  }
+}
 
 /// Combine two `Validated` values using an applicative-style binary function.
 /// - Both `Valid` → apply `f` to the two inner values.
