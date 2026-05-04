@@ -143,10 +143,7 @@ pub struct FieldError[M] {
 
 ///|
 /// Create a `FieldError` with the given path and message.
-pub fn[M] FieldError::new(
-  path : Array[String],
-  message : M,
-) -> FieldError[M] {
+pub fn[M] FieldError::new(path : Array[String], message : M) -> FieldError[M] {
   { path, message }
 }
 
