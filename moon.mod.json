@@ -1,6 +1,6 @@
 {
   "name": "ryota0624/moovalid",
-  "version": "0.2.0",
+  "version": "0.1.0",
   "license": "MIT",
   "keywords": ["validation", "applicative"],
   "description": "A lightweight validation library for MoonBit that accumulates errors instead of failing fast.",
