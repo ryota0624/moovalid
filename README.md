@@ -145,6 +145,13 @@ let username_validator =
 - [Cats `Validated`](https://typelevel.org/cats/datatypes/validated.html) (Scala)
 - [Haskell `Validation`](https://hackage.haskell.org/package/validation)
 
+## Release workflow notes
+
+`release-pr` (`.github/workflows/release.yml`) uses `RELEASE_PR_TOKEN` when available.
+
+- `RELEASE_PR_TOKEN` (recommended): Personal Access Token or GitHub App token with permission to create pull requests.
+- `GITHUB_TOKEN` (fallback): used when `RELEASE_PR_TOKEN` is not set.
+
 ## License
 
 MIT
